@@ -56,6 +56,18 @@ abstract class Command extends BaseCommand
         $this->consoleClientApply();
     }
 
+    public function ifOption($key, &$option, $filled = false)
+    {
+        $option = $this->option($key);
+        return !is_null($option) && (!$filled || filled($option));
+    }
+
+    public function ifArgument($key, &$argument, $filled = false)
+    {
+        $argument = $this->argument($key);
+        return !is_null($argument) && (!$filled || filled($argument));
+    }
+
     public function alert($string)
     {
         $this->newLine();
@@ -95,7 +107,7 @@ abstract class Command extends BaseCommand
     {
         Log::info(sprintf('%s commanding...', static::class));
         return $this->setStyles()
-            ->shoutOutAtStart();
+                    ->shoutOutAtStart();
     }
 
     protected function shoutOutAtStart()
@@ -135,7 +147,8 @@ abstract class Command extends BaseCommand
             $this->start();
             $this->go();
             $this->end();
-        } catch (Throwable $e) {
+        }
+        catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -165,7 +178,8 @@ abstract class Command extends BaseCommand
             if (isset($e->detail)) {
                 if (is_string($e->detail)) {
                     $this->output->writeln(sprintf('<comment>Fault detail:</comment> %s', $e->detail), $this->parseVerbosity());
-                } elseif (is_object($e->detail) || is_array($e->detail)) {
+                }
+                elseif (is_object($e->detail) || is_array($e->detail)) {
                     $this->output->writeln(sprintf('<comment>Fault detail:</comment> %s', json_encode($e->detail)), $this->parseVerbosity());
                 }
             }
@@ -199,7 +213,8 @@ abstract class Command extends BaseCommand
                     ),
                     $this->parseVerbosity()
                 );
-            } else {
+            }
+            else {
                 $this->output->writeln(
                     sprintf(
                         '<comment>#%d</comment> %s%s%s()',
@@ -244,16 +259,16 @@ abstract class Command extends BaseCommand
         $this->info(sprintf('SHELL %s!!!', $this->shellSuccess() ? 'EXECUTED' : 'FAILED'));
 
         Log::info(sprintf(
-            'Shell %s:' . PHP_EOL
-            . '%s' . PHP_EOL
-            . '--------' . PHP_EOL
-            . '%s' . PHP_EOL
-            . '--------' . PHP_EOL
-            . 'Exit code: %d.',
-            $this->shellSuccess() ? 'executed' : 'failed',
-            $shell,
-            trim($this->shellOutput()),
-            $exitCode
-        ));
+                      'Shell %s:' . PHP_EOL
+                      . '%s' . PHP_EOL
+                      . '--------' . PHP_EOL
+                      . '%s' . PHP_EOL
+                      . '--------' . PHP_EOL
+                      . 'Exit code: %d.',
+                      $this->shellSuccess() ? 'executed' : 'failed',
+                      $shell,
+                      trim($this->shellOutput()),
+                      $exitCode
+                  ));
     }
 }
