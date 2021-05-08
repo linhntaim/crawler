@@ -105,7 +105,7 @@ class Filer
         }
     }
 
-    protected function getDefaultToDirectory()
+    public function getDefaultToDirectory()
     {
         return Helper::concatPath(date('Y'), date('m'), date('d'), date('H'));
     }

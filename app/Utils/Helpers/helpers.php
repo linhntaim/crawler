@@ -62,9 +62,9 @@ function fileJsonDecodeArray(string $file, bool $safe = true, int $depth = 512, 
     return [];
 }
 
-function got($value, $default = null)
+function got($value, $default = null, $filled = true)
 {
-    if (filled($value)) {
+    if (($filled && filled($value)) || !is_null($value)) {
         return $value;
     }
 

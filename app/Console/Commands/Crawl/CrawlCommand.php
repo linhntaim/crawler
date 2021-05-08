@@ -3,70 +3,26 @@
 namespace App\Console\Commands\Crawl;
 
 use App\Console\Commands\Base\Command;
-use App\Utils\HandledFiles\Filer\Filer;
-use App\Utils\ValidationTrait;
-use Illuminate\Http\Client\Factory;
-use Illuminate\Support\Facades\Http;
+use App\Crawlers\CrawlBotFactory;
 
-abstract class CrawlCommand extends Command
+class CrawlCommand extends Command
 {
-    use ValidationTrait;
+    protected $signature = 'crawl {name} {--instance=} {--url=}';
 
-    /**
-     * @var Factory
-     */
-    protected $client;
-
-    public function __construct()
+    protected function go()
     {
-        parent::__construct();
-
-        $this->client = Http::getFacadeRoot();
-    }
-
-    protected function crawl($url, callable $callback)
-    {
-        $this->validatedData([
-            'url' => $url,
-        ], [
-            'url' => 'url',
-        ]);
-        $response = $this->client->get($url);
-        if ($response->successful()) {
-            $callback($response->body());
+        $name = $this->argument('name');
+        if ($crawlBot = CrawlBotFactory::factory($name, $this->optionOr('instance', config('crawl.instance_name')))) {
+            $this->warn(sprintf('Crawl bot [%s] running...', $name));
+            $crawlBot->crawl($this->optionOr('url'));
+            $this->info(sprintf('Session [%d] of crawler [%d] crawled!', $crawlBot->getCrawlSession()->id, $crawlBot->getCrawler()->id));
         }
-    }
-
-    protected function download($url)
-    {
-        $extension = pathinfo($url, PATHINFO_EXTENSION);
-        $filer = (new Filer())->fromCreating(null, $extension);
-        $response = $this->client
-            ->withOptions([
-                'sink' => $filer->getOriginStorage()->getRealPath(),
-            ])
-            ->get($url);
-        if (!$response->successful()) {
-            $filer->delete();
-        }
-    }
-
-    public function streamDownload($url)
-    {
-        $response = $this->client
-            ->withOptions(['stream' => true])
-            ->get($url);
-        if ($response->successful()) {
-            $extension = pathinfo($url, PATHINFO_EXTENSION);
-            $filer = (new Filer())->fromCreating(null, $extension)
-                                  ->fOpen('wb');
-            $this->info(sprintf('Downloading [%s]', $url));
-            $body = $response->getBody();
-            while (!$body->eof()) {
-                $filer->fWrite($body->read(1024 * 1024));
+        else {
+            $this->error(sprintf('Crawl bot [%s] was unknown!', $name));
+            $this->info('Available crawl bots:');
+            foreach (CrawlBotFactory::availableCrawlBots() as $availableCrawlBot) {
+                $this->warn(sprintf('- %s', $availableCrawlBot));
             }
-            $this->info('Downloaded!');
-            $filer->fClose();
         }
     }
 }

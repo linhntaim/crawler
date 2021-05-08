@@ -62,10 +62,20 @@ abstract class Command extends BaseCommand
         return !is_null($option) && (!$filled || filled($option));
     }
 
+    public function optionOr($key, $default = null, $filled = true)
+    {
+        return got($this->option($key), $default, $filled);
+    }
+
     public function ifArgument($key, &$argument, $filled = false)
     {
         $argument = $this->argument($key);
         return !is_null($argument) && (!$filled || filled($argument));
+    }
+
+    public function argumentOr($key, $default = null, $filled = true)
+    {
+        return got($this->argument($key), $default, $filled);
     }
 
     public function alert($string)
@@ -107,7 +117,7 @@ abstract class Command extends BaseCommand
     {
         Log::info(sprintf('%s commanding...', static::class));
         return $this->setStyles()
-                    ->shoutOutAtStart();
+            ->shoutOutAtStart();
     }
 
     protected function shoutOutAtStart()
@@ -259,16 +269,16 @@ abstract class Command extends BaseCommand
         $this->info(sprintf('SHELL %s!!!', $this->shellSuccess() ? 'EXECUTED' : 'FAILED'));
 
         Log::info(sprintf(
-                      'Shell %s:' . PHP_EOL
-                      . '%s' . PHP_EOL
-                      . '--------' . PHP_EOL
-                      . '%s' . PHP_EOL
-                      . '--------' . PHP_EOL
-                      . 'Exit code: %d.',
-                      $this->shellSuccess() ? 'executed' : 'failed',
-                      $shell,
-                      trim($this->shellOutput()),
-                      $exitCode
-                  ));
+            'Shell %s:' . PHP_EOL
+            . '%s' . PHP_EOL
+            . '--------' . PHP_EOL
+            . '%s' . PHP_EOL
+            . '--------' . PHP_EOL
+            . 'Exit code: %d.',
+            $this->shellSuccess() ? 'executed' : 'failed',
+            $shell,
+            trim($this->shellOutput()),
+            $exitCode
+        ));
     }
 }
