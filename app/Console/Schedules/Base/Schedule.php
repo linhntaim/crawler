@@ -16,7 +16,7 @@ use Throwable;
 
 abstract class Schedule
 {
-    use ReportExceptionTrait, ClassTrait, ConsoleClientTrait, TransactionTrait;
+    use ClassTrait, ConsoleClientTrait, TransactionTrait, ReportExceptionTrait;
 
     /**
      * @var ConsoleKernel
@@ -58,7 +58,8 @@ abstract class Schedule
             $this->start();
             $this->go();
             $this->end();
-        } catch (Throwable $e) {
+        }
+        catch (Throwable $e) {
             $this->handleException($e);
         }
     }
