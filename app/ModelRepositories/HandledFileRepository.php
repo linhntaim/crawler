@@ -139,7 +139,7 @@ class HandledFileRepository extends ModelRepository
             $imageMaxHeight = ConfigHelper::get('handled_file.image.max_height');
         }
         if ($imageMaxWidth || $imageMaxHeight) {
-            $imageFiler->imageResize($imageMaxWidth ? $imageMaxWidth : null, $imageMaxHeight ? $imageMaxHeight : null)
+            $imageFiler->imageResize($imageMaxWidth ?: null, $imageMaxHeight ?: null)
                 ->imageSave();
         }
         if (ConfigHelper::get('handled_file.image.inline') && !isset($options['inline'])) {
@@ -228,7 +228,7 @@ class HandledFileRepository extends ModelRepository
         $filer = $this->handleFilerWithOptions($filer, $options)->setName($name);
 
         $this->createWithAttributes([
-            'created_by' => $createdBy ? $createdBy : currentUserId(),
+            'created_by' => $createdBy ?: currentUserId(),
             'title' => (function ($name) {
                 $names = explode('.', $name);
                 if (count($names) > 1) {

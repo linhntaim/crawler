@@ -30,6 +30,36 @@ function whenPregMatchAll(string $pattern, string $subject, array &$matches = nu
 }
 
 /**
+ * @param object|string $object
+ * @param string[]|array|string $interfaces
+ */
+function classImplemented($object, $interfaces)
+{
+    $implements = class_implements($object);
+    foreach ((array)$interfaces as $interface) {
+        if (isset($implements[$interface])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @param object|string $object
+ * @param string[]|array|string $classes
+ */
+function classExtended($object, $classes)
+{
+    $parents = class_parents($object);
+    foreach ((array)$classes as $cl) {
+        if (isset($parents[$cl])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @param string $json
  * @param bool $safe
  * @param int $depth
@@ -75,6 +105,17 @@ function iif($bool, $true = null, $false = null)
 {
     return is_null($true) && is_null($false) ?
         value($bool) : value(value($bool) ? (is_null($true) ? true : $true) : (is_null($false) ? false : $false));
+}
+
+/**
+ * @param mixed|null $value
+ * @param callable|mixed $targetValue
+ */
+function setIfNull(&$value, $targetValue)
+{
+    if (is_null($value)) {
+        $value = value($targetValue);
+    }
 }
 
 function callIf($bool, callable $callback, $if = true)
