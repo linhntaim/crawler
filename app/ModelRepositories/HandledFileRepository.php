@@ -240,7 +240,7 @@ class HandledFileRepository extends ModelRepository
             'name' => $filer->getName(),
             'mime' => $filer->getMime(),
             'size' => $filer->getSize(),
-            'options_array_value' => $options,
+            'options' => $options,
             'handling' => isset($options['scan']) && $options['scan'] ?
                 HandledFile::HANDLING_SCAN
                 : HandledFile::HANDLING_YES,
@@ -270,13 +270,13 @@ class HandledFileRepository extends ModelRepository
     public function handledWithFiler(Filer $filer, $options = null)
     {
         if (!$this->model->ready) {
-            $options = is_null($options) ? $this->model->options_array_value : $options;
+            $options = is_null($options) ? $this->model->options : $options;
             $this->updateStoresWithFiler(
                 $this->handleFilerWithOptions($filer, $options)
             );
             $this->updateWithAttributes([
                 'handling' => HandledFile::HANDLING_NO,
-                'options_overridden_array_value' => $options,
+                'options' => $options,
             ]);
         }
         return $this->model;
@@ -304,18 +304,18 @@ class HandledFileRepository extends ModelRepository
                             unset($options['scan']);
                             $options['scanned'] = true;
                             return $options;
-                        })($this->model->options_array_value)
+                        })($this->model->options)
                     );
                 }
                 elseif ($scanned === Scanner::SCAN_FALSE) {
                     $originStorage->delete();
                     $this->updateWithAttributes([
                         'handling' => HandledFile::HANDLING_NO,
-                        'options_overridden_array_value' => (function ($options) {
+                        'options' => (function ($options) {
                             unset($options['scan']);
                             $options['scanned'] = false;
                             return $options;
-                        })($this->model->options_array_value),
+                        })($this->model->options),
                     ]);
                 }
             }

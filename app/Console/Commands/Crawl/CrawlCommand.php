@@ -7,14 +7,17 @@ use App\Crawlers\CrawlBotFactory;
 
 class CrawlCommand extends Command
 {
-    protected $signature = 'crawl {name} {--instance=} {--url=}';
+    protected $signature = 'crawl {name} {--instance=} {--url=} {--max=1000} {--max-retrieve=1000}';
 
     protected function go()
     {
         $name = $this->argument('name');
         if ($crawlBot = CrawlBotFactory::factory($name, $this->optionOr('instance', config('crawl.instance_name')))) {
             $this->warn(sprintf('Crawl bot [%s] running...', $name));
-            $crawlBot->crawl($this->optionOr('url'));
+            $crawlBot
+                ->setCrawlingMax($this->option('max'))
+                ->setCrawlingRetrieveMax($this->option('max-retrieve'))
+                ->crawl($this->optionOr('url'));
             $this->info(sprintf('Session [%d] of crawler [%d] crawled!', $crawlBot->getCrawlSession()->id, $crawlBot->getCrawler()->id));
         }
         else {

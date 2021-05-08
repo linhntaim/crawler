@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'instance_name' => (int)env('CRAWL_INSTANCE_NAME', 'instance_1'),
+    'instance_name' => env('CRAWL_INSTANCE_NAME', 'instance_1'),
 ];

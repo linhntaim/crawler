@@ -14,7 +14,9 @@ class CrawlBot extends BaseCrawlBot
 {
     public const NAME = 'chia_se_nhac_music';
 
-    protected $startingUrls = [];
+    protected $startingUrls = [
+        'https://chiasenhac.vn',
+    ];
 
     protected $urlDomainPolicy = [
         'allow' => [
@@ -93,15 +95,33 @@ class CrawlBot extends BaseCrawlBot
     protected function crawlFiles()
     {
         if (whenPregMatchAll('/https?:\/\/[^"\']*\.(flac|mp3|m4a)/', $this->crawlingContent, $matches)) {
-            foreach ($matches[0] as $url) {
+            $this->withDataRepository(CsnFileRepository::class);
+            $urls = (function ($urls, $extensions) {
+                $uniqueUrls = [];
+                foreach ($urls as $index => $url) {
+                    if (!array_key_exists($url, $uniqueUrls)) {
+                        $uniqueUrls[$url] = $extensions[$index];
+                    }
+                }
+                return $uniqueUrls;
+            })($matches[0], $matches[1]);
+            foreach ($urls as $url => $extension) {
                 if ($filer = $this->urlDownload($url)) {
-                    $this->crawlingFiles->push(
-                        $this->withDataRepository(CsnFileRepository::class)
-                            ->storeData($this->dataIndex . '.' . md5($url), [], [
-                                'file_id' => (new HandledFileRepository())->createWithFiler($filer)->id,
-                                'song_id' => $this->crawlingSong->id,
-                            ])
-                    );
+                    $fileIndex = $extension . '.' . $this->dataIndex . '.' . md5($url);
+                    if (!$this->crawlDataRepository->hasIndex($fileIndex)) {
+                        $this->crawlingFiles->push(
+                            $this->storeData(
+                                $fileIndex,
+                                [
+                                    'file_url' => $url,
+                                ],
+                                [
+                                    'file_id' => (new HandledFileRepository())->createWithFiler($filer)->id,
+                                    'song_id' => $this->crawlingSong->id,
+                                ]
+                            )
+                        );
+                    }
                 }
             }
         }

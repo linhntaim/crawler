@@ -324,13 +324,18 @@ abstract class CrawlBot
             throw new AppException('Data repository was not set.');
         }
 
-        return $this->crawlDataRepository->createWithAttributes([
+        return $this->crawlDataRepository->firstOrCreateWithAttributes(
+            [
+                'index' => $index,
+            ],
+            [
                 'crawl_url_id' => $this->crawlingUrl->id,
                 'crawl_session_id' => $this->crawlSession->id,
                 'crawler_id' => $this->crawler->id,
                 'index' => $index,
                 'meta' => $meta,
-            ] + $additional);
+            ] + $additional
+        );
     }
 
     protected function findUrlsForCrawling()
@@ -460,7 +465,7 @@ abstract class CrawlBot
 
     protected function urlCreateDownloadFiler($url)
     {
-        return ($filer = new Filer())->fromCreating(null, $this->urlExtension($url), Helper::concatPath('crawled', $this->getName(), $filer->getDefaultToDirectory()));
+        return ($filer = new Filer())->fromCreating(urldecode(pathinfo($url, PATHINFO_FILENAME)), $this->urlExtension($url), Helper::concatPath('crawled', $this->getName(), $filer->getDefaultToDirectory()));
     }
 
     protected function urlDownload($url)
@@ -566,6 +571,7 @@ abstract class CrawlBot
         if (!$this->hasCrawled()) {
             $this->storeUrlsForCrawling($this->startingUrls);
         }
+        $this->crawlingUrls = new Collection();
         return $this;
     }
 
