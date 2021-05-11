@@ -5,7 +5,7 @@ namespace App\Crawlers\ModelRepositories;
 use App\Crawlers\Models\CrawlSession;
 use App\ModelRepositories\Base\ModelRepository;
 
-class CrawlSessionRepository extends ModelRepository
+abstract class CrawlSessionRepository extends ModelRepository
 {
     public function modelClass()
     {

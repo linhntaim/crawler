@@ -1,23 +1,23 @@
 <?php
 
-namespace App\Crawlers\Targets\ChiaSeNhacMusic\Models;
+namespace App\Crawlers\Targets\ChiaSeNhacAudio\Models;
 
 use App\Crawlers\Models\CrawlData;
 use App\Models\HandledFile;
 
 /**
- * Class CsnFile
- * @package App\Crawlers\Targets\ChiaSeNhacMusic\Models
+ * Class CsnaFile
+ * @package App\Crawlers\Targets\ChiaSeNhacAudio\Models
  * @property int $file_id
  * @property int $song_id
  * @property string $index
  * @property array $meta
  * @property HandledFile $file
- * @property CsnSong $song
+ * @property CsnaSong $song
  */
-class CsnFile extends CrawlData
+class CsnaFile extends CrawlData
 {
-    protected $table = 'crawl_data_csn_files';
+    protected $table = 'crawl_csna_files';
 
     protected $fillable = [
         'file_id',
@@ -40,6 +40,6 @@ class CsnFile extends CrawlData
 
     public function song()
     {
-        return $this->belongsTo(CsnSong::class, 'song_id', 'id');
+        return $this->belongsTo(CsnaSong::class, 'song_id', 'id');
     }
 }

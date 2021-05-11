@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @package App\Crawlers\ModelRepositories
  * @method CrawlUrl firstOrCreateWithAttributes(array $attributes = [], array $values = [])
  */
-class CrawlUrlRepository extends ModelRepository
+abstract class CrawlUrlRepository extends ModelRepository
 {
     public function modelClass()
     {

@@ -26,6 +26,8 @@ abstract class CrawlBot
     use ReportExceptionTrait;
 
     public const NAME = 'crawl';
+    public const CRAWLING_MAX = 1000;
+    public const CRAWLING_RETRIEVE_MAX = 1000;
 
     /**
      * @var Factory
@@ -36,6 +38,11 @@ abstract class CrawlBot
      * @var CrawlerInstanceRepository
      */
     protected $crawlerInstanceRepository;
+
+    /**
+     * @var CrawlSessionRepository
+     */
+    protected $crawlSessionRepository;
 
     /**
      * @var CrawlUrlRepository
@@ -57,9 +64,9 @@ abstract class CrawlBot
      */
     protected $startingUrl;
 
-    protected $crawlingMax = 1000;
+    protected $crawlingMax = CrawlBot::CRAWLING_MAX;
 
-    protected $crawlingRetrieveMax = 1000;
+    protected $crawlingRetrieveMax = CrawlBot::CRAWLING_RETRIEVE_MAX;
 
     protected $instance;
 
@@ -103,18 +110,25 @@ abstract class CrawlBot
 
     protected $crawlingContent = null;
 
-    public function __construct(string $instance)
+    public function __construct(string $instance = null)
     {
         $this->client = Http::getFacadeRoot();
-        $this->crawlUrlRepository = new CrawlUrlRepository();
         $this->crawlerInstanceRepository = new CrawlerInstanceRepository();
-        $this->instance = $instance;
+        $crawlSessionRepositoryClass = $this->crawlSessionRepositoryClass();
+        $this->crawlSessionRepository = new $crawlSessionRepositoryClass();
+        $crawlUrlRepositoryClass = $this->crawlUrlRepositoryClass();
+        $this->crawlUrlRepository = new $crawlUrlRepositoryClass();
+        $this->instance = $instance ?: config('crawl.instance_name');
     }
 
     public function getName()
     {
         return static::NAME;
     }
+
+    protected abstract function crawlSessionRepositoryClass();
+
+    protected abstract function crawlUrlRepositoryClass();
 
     /**
      * @param int $crawlingMax
@@ -153,6 +167,14 @@ abstract class CrawlBot
     }
 
     /**
+     * @return CrawlUrl
+     */
+    public function getCrawlingUrl()
+    {
+        return $this->crawlingUrl;
+    }
+
+    /**
      * @return static
      */
     protected function retrieveInstance()
@@ -188,7 +210,7 @@ abstract class CrawlBot
 
     protected function generateSession()
     {
-        $this->crawlSession = (new CrawlSessionRepository())->createWithCrawler($this->crawler);
+        $this->crawlSession = $this->crawlSessionRepository->createWithCrawler($this->crawler);
         return $this;
     }
 
@@ -285,7 +307,7 @@ abstract class CrawlBot
 
     protected function hasCrawlingContent()
     {
-        return !empty($this->crawlingContent);
+        return filled($this->crawlingContent);
     }
 
     protected function canCrawlData()
@@ -442,6 +464,7 @@ abstract class CrawlBot
         return [
             'crawler_id' => $this->crawler->id,
             'crawl_session_id' => $this->crawlSession->id,
+            'crawl_url_id' => is_null($this->crawlingUrl) ? null : $this->crawlingUrl->id,
             'status' => CrawlUrl::STATUS_FRESH,
             'index' => is_null($index) ? $this->urlIndex($url) : $index,
             'url' => $url,
@@ -582,6 +605,10 @@ abstract class CrawlBot
 
     protected function endCrawlingContinuously()
     {
+        $this->crawlingUrls = null;
+        $this->crawlingCount = 0;
+        $this->crawlingUrl = null;
+        $this->crawlingContent = null;
         return $this;
     }
 

@@ -1,18 +1,20 @@
 <?php
 
-namespace App\Crawlers\Targets\ChiaSeNhacMusic;
+namespace App\Crawlers\Targets\ChiaSeNhacAudio;
 
 use App\Crawlers\CrawlBot as BaseCrawlBot;
-use App\Crawlers\Targets\ChiaSeNhacMusic\ModelRepositories\CsnFileRepository;
-use App\Crawlers\Targets\ChiaSeNhacMusic\ModelRepositories\CsnSongRepository;
-use App\Crawlers\Targets\ChiaSeNhacMusic\Models\CsnFile;
-use App\Crawlers\Targets\ChiaSeNhacMusic\Models\CsnSong;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaFileRepository;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaSessionRepository;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaSongRepository;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaUrlRepository;
+use App\Crawlers\Targets\ChiaSeNhacAudio\Models\CsnaFile;
+use App\Crawlers\Targets\ChiaSeNhacAudio\Models\CsnaSong;
 use App\ModelRepositories\HandledFileRepository;
 use Illuminate\Database\Eloquent\Collection;
 
 class CrawlBot extends BaseCrawlBot
 {
-    public const NAME = 'chia_se_nhac_music';
+    public const NAME = 'chia_se_nhac_audio';
 
     protected $startingUrls = [
         'https://chiasenhac.vn',
@@ -43,14 +45,24 @@ class CrawlBot extends BaseCrawlBot
     protected $dataIndex;
 
     /**
-     * @var CsnSong
+     * @var CsnaSong
      */
     protected $crawlingSong;
 
     /**
-     * @var CsnFile[]|Collection
+     * @var CsnaFile[]|Collection
      */
     protected $crawlingFiles;
+
+    protected function crawlSessionRepositoryClass()
+    {
+        return CsnaSessionRepository::class;
+    }
+
+    protected function crawlUrlRepositoryClass()
+    {
+        return CsnaUrlRepository::class;
+    }
 
     protected function canCrawlData()
     {
@@ -77,7 +89,7 @@ class CrawlBot extends BaseCrawlBot
 
     protected function crawlSong()
     {
-        $this->crawlingSong = $this->withDataRepository(CsnSongRepository::class)
+        $this->crawlingSong = $this->withDataRepository(CsnaSongRepository::class)
             ->storeData($this->dataIndex, [
                 'artist' => preg_match('/(?<=<li><span>Ca sĩ: <\/span>).+?(?=<\/li>)/', $this->crawlingContent, $matches) === 1 ?
                     strip_tags($matches[0]) : null,
@@ -95,7 +107,7 @@ class CrawlBot extends BaseCrawlBot
     protected function crawlFiles()
     {
         if (whenPregMatchAll('/https?:\/\/[^"\']*\.(flac|mp3|m4a)/', $this->crawlingContent, $matches)) {
-            $this->withDataRepository(CsnFileRepository::class);
+            $this->withDataRepository(CsnaFileRepository::class);
             $urls = (function ($urls, $extensions) {
                 $uniqueUrls = [];
                 foreach ($urls as $index => $url) {

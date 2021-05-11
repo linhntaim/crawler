@@ -34,35 +34,6 @@ class CreateCrawlersTable extends Migration
             $table->index('created_at');
             $table->index('updated_at');
         });
-
-        Schema::create('crawl_sessions', function (Blueprint $table) {
-            $table->engine = 'MyISAM';
-
-            $table->increments('id');
-            $table->integer('crawler_id')->unsigned();
-            $table->timestamps();
-
-            $table->index('crawler_id');
-            $table->index('created_at');
-            $table->index('updated_at');
-        });
-
-        Schema::create('crawl_urls', function (Blueprint $table) {
-            $table->engine = 'MyISAM';
-
-            $table->increments('id');
-            $table->integer('crawler_id')->unsigned();
-            $table->integer('crawl_session_id')->unsigned();
-            $table->tinyInteger('status')->default(1);
-            $table->string('index')->unique();
-            $table->string('url', 2048);
-            $table->timestamps();
-
-            $table->index('crawler_id');
-            $table->index('crawl_session_id');
-            $table->index('created_at');
-            $table->index('updated_at');
-        });
     }
 
     /**
@@ -72,8 +43,6 @@ class CreateCrawlersTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('crawl_urls');
-        Schema::dropIfExists('crawl_sessions');
         Schema::dropIfExists('crawlers');
         Schema::dropIfExists('crawler_instances');
     }

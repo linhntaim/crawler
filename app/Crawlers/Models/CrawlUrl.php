@@ -14,7 +14,7 @@ use App\Models\Base\Model;
  * @property Crawler $crawler
  * @property CrawlSession $session
  */
-class CrawlUrl extends Model
+abstract class CrawlUrl extends Model
 {
     public const STATUS_FRESH = 1;
     public const STATUS_CRAWLING = 2;
@@ -22,13 +22,16 @@ class CrawlUrl extends Model
     public const STATUS_UNCOMPLETED = 4;
     public const STATUS_COMPLETED = 5;
 
-    protected $table = 'crawl_urls';
-
     protected $fillable = [
         'crawler_id',
         'crawl_session_id',
         'status',
         'index',
+        'url',
+    ];
+
+    protected $visible = [
+        'id',
         'url',
     ];
 

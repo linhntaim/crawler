@@ -29,6 +29,10 @@ abstract class CrawlData extends Model
         'meta',
     ];
 
+    protected $visible = [
+        'id',
+    ];
+
     protected $casts = [
         'meta' => 'array',
     ];

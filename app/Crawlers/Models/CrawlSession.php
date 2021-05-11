@@ -12,12 +12,14 @@ use Illuminate\Database\Eloquent\Collection;
  * @property Crawler $crawler
  * @property CrawlUrl[]|Collection $urls
  */
-class CrawlSession extends Model
+abstract class CrawlSession extends Model
 {
-    protected $table = 'crawl_sessions';
-
     protected $fillable = [
         'crawler_id',
+    ];
+
+    protected $visible = [
+        'id',
     ];
 
     public function crawler()

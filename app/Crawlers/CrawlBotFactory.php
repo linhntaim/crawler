@@ -7,16 +7,16 @@ use ReflectionClass;
 class CrawlBotFactory
 {
     protected static $crawlBotClasses = [
-        \App\Crawlers\Targets\ChiaSeNhacMusic\CrawlBot::class,
+        \App\Crawlers\Targets\ChiaSeNhacAudio\CrawlBot::class,
     ];
 
     /**
      * @param string $name
-     * @param string $instance
+     * @param string|null $instance
      * @return CrawlBot|null
      * @throws
      */
-    public static function factory(string $name, string $instance)
+    public static function factory(string $name, string $instance = null)
     {
         foreach (static::$crawlBotClasses as $crawlBotClass) {
             if ($name == (new ReflectionClass($crawlBotClass))->getConstant('NAME')) {
@@ -28,10 +28,10 @@ class CrawlBotFactory
 
     /**
      * @param string $crawlBotClass
-     * @param string $instance
+     * @param string|null $instance
      * @return CrawlBot
      */
-    protected static function createCrawlBot(string $crawlBotClass, string $instance)
+    protected static function createCrawlBot(string $crawlBotClass, string $instance = null)
     {
         return new $crawlBotClass($instance);
     }

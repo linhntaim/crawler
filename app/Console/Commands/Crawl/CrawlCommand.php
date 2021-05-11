@@ -12,12 +12,12 @@ class CrawlCommand extends Command
     protected function go()
     {
         $name = $this->argument('name');
-        if ($crawlBot = CrawlBotFactory::factory($name, $this->optionOr('instance', config('crawl.instance_name')))) {
+        if ($crawlBot = CrawlBotFactory::factory($name, $this->option('instance'))) {
             $this->warn(sprintf('Crawl bot [%s] running...', $name));
             $crawlBot
                 ->setCrawlingMax($this->option('max'))
                 ->setCrawlingRetrieveMax($this->option('max-retrieve'))
-                ->crawl($this->optionOr('url'));
+                ->crawl($this->option('url'));
             $this->info(sprintf('Session [%d] of crawler [%d] crawled!', $crawlBot->getCrawlSession()->id, $crawlBot->getCrawler()->id));
         }
         else {
