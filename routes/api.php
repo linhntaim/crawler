@@ -169,6 +169,15 @@ Route::group([
                 // TODO
             });
 
+            Route::group([
+                'prefix' => 'handled-file',
+            ], function () {
+                Route::post('/', [HomeHandledFileController::class, 'store']);
+                // TODO:
+
+                // TODO
+            });
+
             // TODO:
 
             // TODO

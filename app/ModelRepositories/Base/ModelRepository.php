@@ -174,8 +174,8 @@ abstract class ModelRepository
     }
 
     /**
-     * @param Model|mixed $id
-     * @return mixed
+     * @param Model|int|string|mixed $id
+     * @return int|string|mixed
      */
     public function retrieveId($id)
     {
@@ -183,8 +183,8 @@ abstract class ModelRepository
     }
 
     /**
-     * @param Collection|Model[]|array $ids
-     * @return array
+     * @param Collection|Model[]|int[]|string[]|array $ids
+     * @return int[]|string[]|array
      */
     public function retrieveIds($ids)
     {
