@@ -3,6 +3,7 @@
 namespace App\Crawlers\Models;
 
 use App\Models\Base\Model;
+use App\Utils\ClientSettings\Facade;
 
 /**
  * Class CrawlUrl
@@ -24,6 +25,7 @@ abstract class CrawlUrl extends Model
 
     protected $fillable = [
         'crawler_id',
+        'crawl_url_id',
         'crawl_session_id',
         'status',
         'index',
@@ -33,6 +35,12 @@ abstract class CrawlUrl extends Model
     protected $visible = [
         'id',
         'url',
+        'status',
+        'sd_st_created_at',
+    ];
+
+    protected $appends = [
+        'sd_st_created_at',
     ];
 
     public function crawler()
@@ -43,5 +51,10 @@ abstract class CrawlUrl extends Model
     public function session()
     {
         return $this->belongsTo(CrawlSession::class, 'crawl_session_id', 'id');
+    }
+
+    public function getSdStCreatedAtAttribute()
+    {
+        return Facade::dateTimer()->compound('shortDate', ' ', 'shortTime', $this->attributes['created_at']);
     }
 }

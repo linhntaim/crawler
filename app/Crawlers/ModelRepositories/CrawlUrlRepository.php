@@ -19,6 +19,14 @@ abstract class CrawlUrlRepository extends ModelRepository
         return CrawlUrl::class;
     }
 
+    protected function searchOn($query, array $search)
+    {
+        if (!empty($search['crawl_url_id'])) {
+            $query->where('crawl_url_id', $search['crawl_url_id']);
+        }
+        return parent::searchOn($query, $search);
+    }
+
     protected function getUniqueKeys()
     {
         return array_merge(parent::getUniqueKeys(), [

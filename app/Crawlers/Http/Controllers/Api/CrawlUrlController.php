@@ -30,6 +30,13 @@ abstract class CrawlUrlController extends ModelApiController
         return CrawlBot::CRAWLING_RETRIEVE_MAX;
     }
 
+    protected function searchParams(Request $request)
+    {
+        return [
+            'crawl_url' => 'crawl_url_id',
+        ];
+    }
+
     protected function urlValidatedRules()
     {
         return ['required', 'url'];

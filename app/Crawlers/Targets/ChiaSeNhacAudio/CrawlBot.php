@@ -3,6 +3,7 @@
 namespace App\Crawlers\Targets\ChiaSeNhacAudio;
 
 use App\Crawlers\CrawlBot as BaseCrawlBot;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaCrawlerRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaFileRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaSessionRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaSongRepository;
@@ -53,6 +54,11 @@ class CrawlBot extends BaseCrawlBot
      * @var CsnaFile[]|Collection
      */
     protected $crawlingFiles;
+
+    protected function crawlerRepositoryClass()
+    {
+        return CsnaCrawlerRepository::class;
+    }
 
     protected function crawlSessionRepositoryClass()
     {

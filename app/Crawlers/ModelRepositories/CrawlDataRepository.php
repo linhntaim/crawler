@@ -14,6 +14,9 @@ abstract class CrawlDataRepository extends ModelRepository
 
     protected function searchOn($query, array $search)
     {
+        if (!empty($search['crawl_url_id'])) {
+            $query->where('crawl_url_id', $search['crawl_url_id']);
+        }
         if (!empty($search['index'])) {
             $query->where('index', $search['index']);
         }

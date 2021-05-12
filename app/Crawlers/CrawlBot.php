@@ -40,6 +40,11 @@ abstract class CrawlBot
     protected $crawlerInstanceRepository;
 
     /**
+     * @var CrawlerRepository
+     */
+    protected $crawlerRepository;
+
+    /**
      * @var CrawlSessionRepository
      */
     protected $crawlSessionRepository;
@@ -114,6 +119,8 @@ abstract class CrawlBot
     {
         $this->client = Http::getFacadeRoot();
         $this->crawlerInstanceRepository = new CrawlerInstanceRepository();
+        $crawlerRepositoryClass = $this->crawlerRepositoryClass();
+        $this->crawlerRepository = new $crawlerRepositoryClass();
         $crawlSessionRepositoryClass = $this->crawlSessionRepositoryClass();
         $this->crawlSessionRepository = new $crawlSessionRepositoryClass();
         $crawlUrlRepositoryClass = $this->crawlUrlRepositoryClass();
@@ -125,6 +132,8 @@ abstract class CrawlBot
     {
         return static::NAME;
     }
+
+    protected abstract function crawlerRepositoryClass();
 
     protected abstract function crawlSessionRepositoryClass();
 
@@ -204,7 +213,7 @@ abstract class CrawlBot
 
     protected function retrieveCrawler()
     {
-        $this->crawler = (new CrawlerRepository())->firstOrCreateWithName($this->getName());
+        $this->crawler = $this->crawlerRepository->firstOrCreateWithName($this->getName());
         return $this;
     }
 

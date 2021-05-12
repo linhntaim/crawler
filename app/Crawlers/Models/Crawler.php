@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @property CrawlSession[]|Collection $sessions
  * @property CrawlUrl[]|Collection $urls
  */
-class Crawler extends Model
+abstract class Crawler extends Model
 {
     protected $table = 'crawlers';
 
@@ -21,13 +21,17 @@ class Crawler extends Model
         'name',
     ];
 
+    protected abstract function sessionClass();
+
+    protected abstract function urlClass();
+
     public function sessions()
     {
-        return $this->hasMany(CrawlSession::class, 'crawler_id', 'id');
+        return $this->hasMany($this->sessionClass(), 'crawler_id', 'id');
     }
 
     public function urls()
     {
-        return $this->hasMany(CrawlUrl::class, 'crawler_id', 'id');
+        return $this->hasMany($this->urlClass(), 'crawler_id', 'id');
     }
 }

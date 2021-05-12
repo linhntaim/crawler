@@ -63,6 +63,8 @@ use App\Http\Controllers\Api\Home\Account\AccountController as HomeAccountContro
 
 // TODO: Others
 use App\Crawlers\Targets\ChiaSeNhacAudio\Http\Controllers\Api\CrawlUrlController as CsnaCrawlUrlController;
+use App\Crawlers\Targets\ChiaSeNhacAudio\Http\Controllers\Api\CrawlSongController as CsnaCrawlSongController;
+use App\Crawlers\Targets\ChiaSeNhacAudio\Http\Controllers\Api\CrawlFileController as CsnaCrawlFileController;
 
 // TODO
 
@@ -101,8 +103,19 @@ Route::group([
             Route::group([
                 'prefix' => 'crawl-url',
             ], function () {
+                Route::get('/', [CsnaCrawlUrlController::class, 'index']);
                 Route::post('/', [CsnaCrawlUrlController::class, 'store']);
                 Route::get('{id}', [CsnaCrawlUrlController::class, 'show']);
+            });
+            Route::group([
+                'prefix' => 'crawl-song',
+            ], function () {
+                Route::get('/', [CsnaCrawlSongController::class, 'index']);
+            });
+            Route::group([
+                'prefix' => 'crawl-file',
+            ], function () {
+                Route::get('/', [CsnaCrawlFileController::class, 'index']);
             });
         });
     });
