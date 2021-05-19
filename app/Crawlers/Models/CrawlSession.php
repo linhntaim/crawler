@@ -10,10 +10,12 @@ use Illuminate\Database\Eloquent\Collection;
  * @package App\Crawlers\Models
  * @property int $id
  * @property Crawler $crawler
- * @property CrawlUrl[]|Collection $urls
+ * @property CrawlUrl[]|Collection $crawlUrls
  */
 abstract class CrawlSession extends Model
 {
+    protected $table = 'crawl_sessions';
+
     protected $fillable = [
         'crawler_id',
     ];
@@ -27,8 +29,21 @@ abstract class CrawlSession extends Model
         return $this->belongsTo(Crawler::class, 'crawler_id', 'id');
     }
 
-    public function urls()
+    protected abstract function urlClass();
+
+    protected abstract function sessionUrlClass();
+
+    /**
+     * @return CrawlSessionUrl
+     */
+    protected function newSessionUrlModel()
     {
-        return $this->hasMany(CrawlUrl::class, 'crawl_session_id', 'id');
+        $sessionUrlClass = $this->sessionUrlClass();
+        return new $sessionUrlClass;
+    }
+
+    public function crawlUrls()
+    {
+        return $this->belongsToMany($this->urlClass(), $this->newSessionUrlModel()->getTable(), 'crawl_session_id', 'crawl_url_id', 'id', 'id');
     }
 }

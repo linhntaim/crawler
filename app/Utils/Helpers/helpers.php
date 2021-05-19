@@ -60,6 +60,27 @@ function classExtended($object, $classes)
 }
 
 /**
+ * @param array $data
+ * @param int $status
+ * @param array $headers
+ * @return \Illuminate\Http\JsonResponse
+ */
+function responseJson(array $data = [], int $status = 200, array $headers = [])
+{
+    return response()->json($data, $status, $headers, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+}
+
+/**
+ * @param mixed $value
+ * @param int $depth
+ * @return bool|string
+ */
+function storeJson($value, int $depth = 512)
+{
+    return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE, $depth);
+}
+
+/**
  * @param string|null $json
  * @param bool $safe
  * @param int $depth

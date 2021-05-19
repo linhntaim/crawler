@@ -2,44 +2,44 @@
 
 namespace App\Crawlers\Targets\ChiaSeNhacAudio\Models;
 
-use App\Crawlers\Models\CrawlData;
+use App\Crawlers\Models\CrawlDatum;
 use App\Models\HandledFile;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Class CsnaFile
  * @package App\Crawlers\Targets\ChiaSeNhacAudio\Models
- * @property int $file_id
+ * @property CsnaCrawledFile[]|Collection $crawledData
  * @property int $song_id
- * @property string $index
- * @property array $meta
- * @property HandledFile $file
+ * @property int $file_id
  * @property CsnaSong $song
+ * @property HandledFile $file
  */
-class CsnaFile extends CrawlData
+class CsnaFile extends CrawlDatum
 {
     protected $table = 'crawl_csna_files';
 
     protected $fillable = [
-        'file_id',
-        'song_id',
-        'crawl_url_id',
-        'crawl_session_id',
         'crawler_id',
         'index',
         'meta',
+
+        'song_id',
+        'file_id',
     ];
 
-    protected $casts = [
-        'meta' => 'array',
-    ];
-
-    public function file()
+    protected function crawledDatumClass()
     {
-        return $this->belongsTo(HandledFile::class, 'file_id', 'id');
+        return CsnaCrawledFile::class;
     }
 
     public function song()
     {
         return $this->belongsTo(CsnaSong::class, 'song_id', 'id');
+    }
+
+    public function file()
+    {
+        return $this->belongsTo(HandledFile::class, 'file_id', 'id');
     }
 }

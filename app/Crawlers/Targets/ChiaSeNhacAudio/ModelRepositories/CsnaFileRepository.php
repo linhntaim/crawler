@@ -2,10 +2,10 @@
 
 namespace App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories;
 
-use App\Crawlers\ModelRepositories\CrawlDataRepository;
+use App\Crawlers\ModelRepositories\CrawlDatumRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\Models\CsnaFile;
 
-class CsnaFileRepository extends CrawlDataRepository
+class CsnaFileRepository extends CrawlDatumRepository
 {
     public function modelClass()
     {

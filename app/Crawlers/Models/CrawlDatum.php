@@ -2,28 +2,25 @@
 
 namespace App\Crawlers\Models;
 
+use App\ModelCasts\SafeArrayCast;
 use App\Models\Base\Model;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Class CrawlData
  * @package App\Crawlers\Models
  * @property int $id
  * @property int $crawler_id
- * @property int $crawl_session_id
- * @property int $crawl_url_id
  * @property string $index
  * @property array $meta
  * @property Crawler $crawler
- * @property CrawlSession $session
- * @property CrawlUrl $url
+ * @property CrawledDatum[]|Collection $crawledData
  */
-abstract class CrawlData extends Model
+abstract class CrawlDatum extends Model
 {
     protected $table = 'crawl_data';
 
     protected $fillable = [
-        'crawl_url_id',
-        'crawl_session_id',
         'crawler_id',
         'index',
         'meta',
@@ -35,21 +32,20 @@ abstract class CrawlData extends Model
     ];
 
     protected $casts = [
-        'meta' => 'array',
+        'meta' => SafeArrayCast::class,
     ];
+
+    public $timestamps = false;
 
     public function crawler()
     {
         return $this->belongsTo(Crawler::class, 'crawler_id', 'id');
     }
 
-    public function session()
-    {
-        return $this->belongsTo(CrawlSession::class, 'crawl_session_id', 'id');
-    }
+    protected abstract function crawledDatumClass();
 
-    public function url()
+    public function crawledData()
     {
-        return $this->belongsTo(CrawlUrl::class, 'crawl_url_id', 'id');
+        return $this->hasMany($this->crawledDatumClass(), 'crawl_datum_id', 'id');
     }
 }

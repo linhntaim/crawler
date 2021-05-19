@@ -7,4 +7,9 @@ use App\Crawlers\Models\CrawlUrl;
 class CsnaUrl extends CrawlUrl
 {
     protected $table = 'crawl_csna_urls';
+
+    protected function crawledUrlClass()
+    {
+        return CsnaCrawledUrl::class;
+    }
 }

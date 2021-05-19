@@ -35,6 +35,6 @@ class SafeArrayCast
         if (!($model instanceof ISafeArrayCast) || $model->isSafeArrayCastEnabled($key)) {
             $value = array_merge($model->{$key}, $value);
         }
-        return json_encode($value);
+        return storeJson($value);
     }
 }

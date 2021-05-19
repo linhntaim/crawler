@@ -2,12 +2,15 @@
 
 namespace App\Crawlers;
 
-use App\Crawlers\ModelRepositories\CrawlDataRepository;
+use App\Crawlers\ModelRepositories\CrawlDatumRepository;
+use App\Crawlers\ModelRepositories\CrawledDatumRepository;
+use App\Crawlers\ModelRepositories\CrawledUrlRepository;
 use App\Crawlers\ModelRepositories\CrawlerInstanceRepository;
 use App\Crawlers\ModelRepositories\CrawlerRepository;
 use App\Crawlers\ModelRepositories\CrawlSessionRepository;
+use App\Crawlers\ModelRepositories\CrawlSessionUrlRepository;
 use App\Crawlers\ModelRepositories\CrawlUrlRepository;
-use App\Crawlers\Models\CrawlData;
+use App\Crawlers\Models\CrawlDatum;
 use App\Crawlers\Models\Crawler;
 use App\Crawlers\Models\CrawlSession;
 use App\Crawlers\Models\CrawlUrl;
@@ -55,19 +58,29 @@ abstract class CrawlBot
     protected $crawlUrlRepository;
 
     /**
-     * @var CrawlDataRepository
+     * @var CrawlSessionUrlRepository
      */
-    protected $crawlDataRepository;
+    protected $crawlSessionUrlRepository;
+
+    /**
+     * @var CrawledUrlRepository
+     */
+    protected $crawledUrlRepository;
+
+    /**
+     * @var CrawlDatumRepository
+     */
+    protected $crawlDatumRepository;
+
+    /**
+     * @var CrawledDatumRepository
+     */
+    protected $crawledDatumRepository;
 
     /**
      * @var string[]|array
      */
     protected $startingUrls = [];
-
-    /**
-     * @var string
-     */
-    protected $startingUrl;
 
     protected $crawlingMax = CrawlBot::CRAWLING_MAX;
 
@@ -125,6 +138,10 @@ abstract class CrawlBot
         $this->crawlSessionRepository = new $crawlSessionRepositoryClass();
         $crawlUrlRepositoryClass = $this->crawlUrlRepositoryClass();
         $this->crawlUrlRepository = new $crawlUrlRepositoryClass();
+        $crawlSessionUrlRepositoryClass = $this->crawlSessionUrlRepositoryClass();
+        $this->crawlSessionUrlRepository = new $crawlSessionUrlRepositoryClass();
+        $crawledUrlRepositoryClass = $this->crawledUrlRepositoryClass();
+        $this->crawledUrlRepository = new $crawledUrlRepositoryClass();
         $this->instance = $instance ?: config('crawl.instance_name');
     }
 
@@ -138,6 +155,10 @@ abstract class CrawlBot
     protected abstract function crawlSessionRepositoryClass();
 
     protected abstract function crawlUrlRepositoryClass();
+
+    protected abstract function crawlSessionUrlRepositoryClass();
+
+    protected abstract function crawledUrlRepositoryClass();
 
     /**
      * @param int $crawlingMax
@@ -260,36 +281,41 @@ abstract class CrawlBot
 
     protected function crawling()
     {
-        $canCrawlData = $this->canCrawlData();
-        $canCrawlUrls = $this->canCrawlUrls();
-        if ($canCrawlData || $canCrawlUrls) {
-            if ($this->setCrawlingContent()->hasCrawlingContent()) {
-                $this->updateCrawlingProgress(CrawlUrl::STATUS_CRAWLING);
-                $status = CrawlUrl::STATUS_COMPLETED;
-                if ($canCrawlData) {
-                    try {
-                        $this->crawlData();
-                    }
-                    catch (Throwable $exception) {
-                        $this->reportException($exception);
+        $this->crawlSessionUrlRepository->createWithSessionAndUrl($this->crawlSession, $this->crawlingUrl);
 
-                        $status = CrawlUrl::STATUS_UNCOMPLETED;
-                    }
-                }
-                if ($canCrawlUrls) {
-                    try {
-                        $this->crawlUrls();
-                    }
-                    catch (Throwable $exception) {
-                        $this->reportException($exception);
+        if ($this->crawlingUrl->status != CrawlUrl::STATUS_COMPLETED) {
+            $status = CrawlUrl::STATUS_COMPLETED;
 
-                        $status = $status == CrawlUrl::STATUS_UNCOMPLETED ?
-                            CrawlUrl::STATUS_FAILED : CrawlUrl::STATUS_UNCOMPLETED;
+            $canCrawlData = $this->canCrawlData();
+            $canCrawlUrls = $this->canCrawlUrls();
+            if ($canCrawlData || $canCrawlUrls) {
+                if ($this->retrieveCrawlingContent()->hasCrawlingContent()) {
+                    $this->updateCrawlingProgress(CrawlUrl::STATUS_CRAWLING);
+                    if ($canCrawlData) {
+                        try {
+                            $this->crawlData();
+                        }
+                        catch (Throwable $exception) {
+                            $this->reportException($exception);
+
+                            $status = CrawlUrl::STATUS_UNCOMPLETED;
+                        }
                     }
+                    if ($canCrawlUrls) {
+                        try {
+                            $this->crawlUrls();
+                        }
+                        catch (Throwable $exception) {
+                            $this->reportException($exception);
+
+                            $status = $status == CrawlUrl::STATUS_UNCOMPLETED ?
+                                CrawlUrl::STATUS_FAILED : CrawlUrl::STATUS_UNCOMPLETED;
+                        }
+                    }
+                    $this->clearCrawlingContent();
                 }
-                $this->updateCrawlingProgress($status)
-                    ->clearCrawlingContent();
             }
+            $this->updateCrawlingProgress($status);
         }
         return $this;
     }
@@ -300,7 +326,7 @@ abstract class CrawlBot
         return $this;
     }
 
-    protected function setCrawlingContent()
+    protected function retrieveCrawlingContent()
     {
         $response = $this->client->get($this->crawlingUrl->url);
 
@@ -319,25 +345,27 @@ abstract class CrawlBot
         return filled($this->crawlingContent);
     }
 
+    #region Crawl Data
     protected function canCrawlData()
-    {
-        return true;
-    }
-
-    protected function canCrawlUrls()
     {
         return true;
     }
 
     protected abstract function crawlData();
 
-    protected function withDataRepository($dataRepository)
+    protected function withDatumRepository($crawlDatumRepository, $crawledDatumRepository)
     {
-        if (is_string($dataRepository)) {
-            $dataRepository = new $dataRepository;
+        if (is_string($crawlDatumRepository)) {
+            $crawlDatumRepository = new $crawlDatumRepository;
         }
-        if ($dataRepository instanceof CrawlDataRepository) {
-            $this->crawlDataRepository = $dataRepository;
+        if ($crawlDatumRepository instanceof CrawlDatumRepository) {
+            $this->crawlDatumRepository = $crawlDatumRepository;
+        }
+        if (is_string($crawledDatumRepository)) {
+            $crawledDatumRepository = new $crawledDatumRepository;
+        }
+        if ($crawledDatumRepository instanceof CrawledDatumRepository) {
+            $this->crawledDatumRepository = $crawledDatumRepository;
         }
         return $this;
     }
@@ -346,32 +374,86 @@ abstract class CrawlBot
      * @param string $index
      * @param array $meta
      * @param array $additional
-     * @return CrawlData|mixed
+     * @return CrawlDatum|mixed
      * @throws
      */
     protected function storeData(string $index, array $meta = [], array $additional = [])
     {
-        if (is_null($this->crawlDataRepository)) {
-            throw new AppException('Data repository was not set.');
+        if (is_null($this->crawlDatumRepository)) {
+            throw new AppException('Crawl datum repository was not set.');
+        }
+        if (is_null($this->crawledDatumRepository)) {
+            throw new AppException('Crawled datum repository was not set.');
         }
 
-        return $this->crawlDataRepository->firstOrCreateWithAttributes(
-            [
-                'index' => $index,
-            ],
-            [
-                'crawl_url_id' => $this->crawlingUrl->id,
-                'crawl_session_id' => $this->crawlSession->id,
-                'crawler_id' => $this->crawler->id,
-                'index' => $index,
-                'meta' => $meta,
-            ] + $additional
+        $crawlDatum = $this->crawlDatumRepository->createWithCrawler($this->crawler, $index, $meta, $additional);
+        $this->crawledDatumRepository->createWithFromUrlAndDatum($this->crawlingUrl, $crawlDatum);
+        return $crawlDatum;
+    }
+
+    protected function urlExtension($url)
+    {
+        return empty($extension = pathinfo($url, PATHINFO_EXTENSION)) ? 'html' : $extension;
+    }
+
+    protected function urlCreateFilerForDownloading($url)
+    {
+        return ($filer = new Filer())->fromCreating(
+            urldecode(pathinfo($url, PATHINFO_FILENAME)),
+            $this->urlExtension($url),
+            Helper::concatPath('crawled', $this->getName(), $filer->getDefaultToDirectory())
+        );
+    }
+
+    protected function urlDownload($url)
+    {
+        $filer = $this->urlCreateFilerForDownloading($url);
+        return $this->client
+            ->withOptions([
+                'sink' => $filer->getOriginStorage()->getRealPath(),
+            ])
+            ->get($url)
+            ->successful() ? $filer : null;
+    }
+
+    protected function urlStreamDownload($url)
+    {
+        $response = $this->client
+            ->withOptions(['stream' => true])
+            ->get($url);
+        if ($response->successful()) {
+            $filer = $this->urlCreateFilerForDownloading($url)
+                ->fEnableBinaryHandling()
+                ->fStartWriting();
+            $body = $response->getBody();
+            while (!$body->eof()) {
+                $filer->fWrite($body->read(1024 * 1024));
+            }
+            $filer->fClose();
+            return $filer;
+        }
+        return null;
+    }
+    #endregion
+
+    #region Crawl Urls
+    protected function canCrawlUrls()
+    {
+        return true;
+    }
+
+    protected function crawlUrls()
+    {
+        $this->storeUrlsForCrawling(
+            $this->filterUrlsForCrawling(
+                $this->findUrlsForCrawling()
+            )
         );
     }
 
     protected function findUrlsForCrawling()
     {
-        if (whenPregMatchAll('/https?:\/\/(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])([^"\']*|\/[^"\']*)/', $this->crawlingContent, $matches)) {
+        if (whenPregMatchAll('/https?:\/\/(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])([^"\'\)\]]*|\/[^"\'\)\]]*)/i', $this->crawlingContent, $matches)) {
             return array_map(function ($url) {
                 return rtrim($url, " \t\n\r\0\x0B/");
             }, $matches[0]);
@@ -392,7 +474,7 @@ abstract class CrawlBot
     {
         if (count($this->urlDomainPolicy)) {
             return array_filter($urls, function ($url) {
-                if (preg_match('/^https?:\/\/([^\/]+)(\/.*)?$/', $url, $matches) === 1) {
+                if (preg_match('/^https?:\/\/([^\/]+)(\/.*)?$/i', $url, $matches) === 1) {
                     return $this->filterByPolicy(strtolower($matches[1]), $this->urlDomainPolicy);
                 }
                 return false;
@@ -405,7 +487,7 @@ abstract class CrawlBot
     {
         if (count($this->urlPathPolicy)) {
             return array_filter($urls, function ($url) {
-                if (preg_match('/^https?:\/\/[^\/]+\/(.+)$/', $url, $matches) === 1) {
+                if (preg_match('/^https?:\/\/[^\/]+\/(.+)$/i', $url, $matches) === 1) {
                     return $this->filterByPolicy(strtolower($matches[1]), $this->urlPathPolicy);
                 }
                 return true;
@@ -418,7 +500,7 @@ abstract class CrawlBot
     {
         if (count($this->urlExtensionPolicy)) {
             return array_filter($urls, function ($url) {
-                if (preg_match('/^https?:\/\/[^\/]+\/.+\.([a-zA-Z0-9]+)(\?.*)?$/', $url, $matches) === 1) {
+                if (preg_match('/^https?:\/\/[^\/]+\/.+\.([a-zA-Z0-9]+)(\?.*)?$/i', $url, $matches) === 1) {
                     return $this->filterByPolicy(strtolower($matches[1]), $this->urlExtensionPolicy);
                 }
                 return true;
@@ -433,15 +515,6 @@ abstract class CrawlBot
         $denies = $policy['deny'] ?? null;
         return (!$allows || Str::is($allows, $value))
             && (!$denies || !Str::is($denies, $value));
-    }
-
-    protected function crawlUrls()
-    {
-        $this->storeUrlsForCrawling(
-            $this->filterUrlsForCrawling(
-                $this->findUrlsForCrawling()
-            )
-        );
     }
 
     /**
@@ -460,80 +533,18 @@ abstract class CrawlBot
      */
     protected function storeUrlForCrawling(string $url)
     {
-        return $this->crawlUrlRepository->firstOrCreateWithAttributes(
-            [
-                'index' => ($index = $this->urlIndex($url)),
-            ],
-            $this->urlAttributes($url, $index)
-        );
-    }
-
-    protected function urlAttributes($url, $index = null)
-    {
-        return [
-            'crawler_id' => $this->crawler->id,
-            'crawl_session_id' => $this->crawlSession->id,
-            'crawl_url_id' => is_null($this->crawlingUrl) ? null : $this->crawlingUrl->id,
-            'status' => CrawlUrl::STATUS_FRESH,
-            'index' => is_null($index) ? $this->urlIndex($url) : $index,
-            'url' => $url,
-        ];
-    }
-
-    protected function urlIndex($url)
-    {
-        $parsed = parse_url($url);
-        return sprintf(
-            '%s.%s',
-            md5($parsed['host']),
-            md5(sprintf('%s?%s#%s', $parsed['path'] ?? '', $parsed['query'] ?? '', $parsed['hash'] ?? ''))
-        );
-    }
-
-    protected function urlExtension($url)
-    {
-        return empty($extension = pathinfo($url, PATHINFO_EXTENSION)) ? 'html' : $extension;
-    }
-
-    protected function urlCreateDownloadFiler($url)
-    {
-        return ($filer = new Filer())->fromCreating(urldecode(pathinfo($url, PATHINFO_FILENAME)), $this->urlExtension($url), Helper::concatPath('crawled', $this->getName(), $filer->getDefaultToDirectory()));
-    }
-
-    protected function urlDownload($url)
-    {
-        $filer = $this->urlCreateDownloadFiler($url);
-        return $this->client
-            ->withOptions([
-                'sink' => $filer->getOriginStorage()->getRealPath(),
-            ])
-            ->get($url)
-            ->successful() ? $filer : null;
-    }
-
-    protected function urlStreamDownload($url)
-    {
-        $response = $this->client
-            ->withOptions(['stream' => true])
-            ->get($url);
-        if ($response->successful()) {
-            $filer = $this->urlCreateDownloadFiler($url)
-                ->fEnableBinaryHandling()
-                ->fStartWriting();
-            $body = $response->getBody();
-            while (!$body->eof()) {
-                $filer->fWrite($body->read(1024 * 1024));
-            }
-            $filer->fClose();
-            return $filer;
+        $crawlUrl = $this->crawlUrlRepository->createWithCrawler($this->crawler, $url);
+        if (!is_null($this->crawlingUrl)) {
+            $this->crawledUrlRepository->createWithFromUrlAndUrl($this->crawlingUrl, $crawlUrl);
         }
-        return null;
+        return $crawlUrl;
     }
+    #endregion
 
     #region Single
     protected function crawlSingle(string $url)
     {
-        $this->startingUrl = $url;
+        array_unshift($this->startingUrls, $url);
         return $this->bootstrapSingle()
             ->startCrawlingSingle()
             ->crawlingSingle()
@@ -543,14 +554,7 @@ abstract class CrawlBot
     protected function bootstrapSingle()
     {
         $this->bootstrap();
-        $this->crawlingUrl = $this->storeUrlForCrawling($this->startingUrl);
         return $this;
-    }
-
-    protected function crawlingSingle()
-    {
-        return $this->crawlingUrl->status == CrawlUrl::STATUS_FRESH ?
-            $this->crawling() : $this;
     }
 
     protected function startCrawlingSingle()
@@ -560,21 +564,27 @@ abstract class CrawlBot
 
     protected function endCrawlingSingle()
     {
+        $this->crawlingUrl = null;
         return $this;
+    }
+
+    protected function crawlingSingle()
+    {
+        $this->crawlingUrl = $this->storeUrlForCrawling(array_shift($this->startingUrls));
+        return $this->crawling();
     }
     #endregion
 
     #region Continuously
-
     /**
      * @return CrawlUrl[]|Collection
      */
-    protected function retrieveFreshCrawlingUrls()
+    protected function retrieveNotCompletedCrawlingUrls()
     {
         return $this->crawlUrlRepository
             ->sort('id')
             ->limit($this->crawlingRetrieveMax)
-            ->getFreshByCrawlerAlongIdWithDividedOrder(
+            ->getNotCompletedByCrawlerAlongIdWithDividedOrder(
                 $this->crawler,
                 $this->instanceCount,
                 $this->instanceOrder
@@ -584,9 +594,9 @@ abstract class CrawlBot
     /**
      * @return static
      */
-    protected function queueFreshCrawlingUrls()
+    protected function queueNotCompletedCrawlingUrls()
     {
-        return $this->queueCrawlingUrls($this->retrieveFreshCrawlingUrls());
+        return $this->queueCrawlingUrls($this->retrieveNotCompletedCrawlingUrls());
     }
 
     protected function crawlContinuously()
@@ -609,7 +619,7 @@ abstract class CrawlBot
 
     protected function startCrawlingContinuously()
     {
-        return $this->queueFreshCrawlingUrls();
+        return $this->queueNotCompletedCrawlingUrls();
     }
 
     protected function endCrawlingContinuously()
@@ -617,7 +627,6 @@ abstract class CrawlBot
         $this->crawlingUrls = null;
         $this->crawlingCount = 0;
         $this->crawlingUrl = null;
-        $this->crawlingContent = null;
         return $this;
     }
 
@@ -627,7 +636,7 @@ abstract class CrawlBot
     protected function nextFreshCrawlingUrl()
     {
         if (!$this->crawlingUrls->count()) {
-            $this->queueFreshCrawlingUrls();
+            $this->queueNotCompletedCrawlingUrls();
         }
         return $this->nextCrawlingUrl();
     }

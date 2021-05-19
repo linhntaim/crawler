@@ -33,7 +33,7 @@ abstract class CrawlUrlController extends ModelApiController
     protected function searchParams(Request $request)
     {
         return [
-            'crawl_url' => 'crawl_url_id',
+            'from_crawl_url' => 'from_crawl_url_id',
         ];
     }
 
@@ -60,6 +60,8 @@ abstract class CrawlUrlController extends ModelApiController
             ->setCrawlingMax($this->getCrawlingMax())
             ->setCrawlingRetrieveMax($this->getCrawlingRetrieveMax())
             ->crawl($request->input('url'))
-            ->getCrawlingUrl();
+            ->getCrawlSession()
+            ->crawlUrls()
+            ->first();
     }
 }

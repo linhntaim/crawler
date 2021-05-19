@@ -26,7 +26,7 @@ class CrawlUrlController extends BaseCrawlUrlController
     protected function urlValidatedRules()
     {
         return array_merge(parent::urlValidatedRules(), [
-            'regex:/^https?:\/\/(|.+\.)chiasenhac.vn/',
+            'regex:/^https?:\/\/(|.+\.)chiasenhac.vn/i',
         ]);
     }
 }

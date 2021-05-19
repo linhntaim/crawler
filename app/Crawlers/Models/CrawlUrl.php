@@ -4,6 +4,7 @@ namespace App\Crawlers\Models;
 
 use App\Models\Base\Model;
 use App\Utils\ClientSettings\Facade;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Class CrawlUrl
@@ -13,7 +14,8 @@ use App\Utils\ClientSettings\Facade;
  * @property string $index
  * @property string $url
  * @property Crawler $crawler
- * @property CrawlSession $session
+ * @property CrawledUrl[]|Collection $fromCrawledUrls
+ * @property CrawledUrl[]|Collection $crawledUrls
  */
 abstract class CrawlUrl extends Model
 {
@@ -23,10 +25,10 @@ abstract class CrawlUrl extends Model
     public const STATUS_UNCOMPLETED = 4;
     public const STATUS_COMPLETED = 5;
 
+    protected $table = 'crawl_urls';
+
     protected $fillable = [
         'crawler_id',
-        'crawl_url_id',
-        'crawl_session_id',
         'status',
         'index',
         'url',
@@ -36,25 +38,24 @@ abstract class CrawlUrl extends Model
         'id',
         'url',
         'status',
-        'sd_st_created_at',
     ];
 
-    protected $appends = [
-        'sd_st_created_at',
-    ];
+    public $timestamps = false;
 
     public function crawler()
     {
         return $this->belongsTo(Crawler::class, 'crawler_id', 'id');
     }
 
-    public function session()
+    protected abstract function crawledUrlClass();
+
+    public function fromCrawledUrls()
     {
-        return $this->belongsTo(CrawlSession::class, 'crawl_session_id', 'id');
+        return $this->hasMany($this->crawledUrlClass(), 'crawl_url_id', 'id');
     }
 
-    public function getSdStCreatedAtAttribute()
+    public function crawledUrls()
     {
-        return Facade::dateTimer()->compound('shortDate', ' ', 'shortTime', $this->attributes['created_at']);
+        return $this->hasMany($this->crawledUrlClass(), 'from_crawl_url_id', 'id');
     }
 }

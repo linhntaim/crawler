@@ -3,9 +3,13 @@
 namespace App\Crawlers\Targets\ChiaSeNhacAudio;
 
 use App\Crawlers\CrawlBot as BaseCrawlBot;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaCrawledFileRepository;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaCrawledSongRepository;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaCrawledUrlRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaCrawlerRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaFileRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaSessionRepository;
+use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaSessionUrlRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaSongRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\ModelRepositories\CsnaUrlRepository;
 use App\Crawlers\Targets\ChiaSeNhacAudio\Models\CsnaFile;
@@ -70,9 +74,19 @@ class CrawlBot extends BaseCrawlBot
         return CsnaUrlRepository::class;
     }
 
+    protected function crawlSessionUrlRepositoryClass()
+    {
+        return CsnaSessionUrlRepository::class;
+    }
+
+    protected function crawledUrlRepositoryClass()
+    {
+        return CsnaCrawledUrlRepository::class;
+    }
+
     protected function canCrawlData()
     {
-        if (preg_match('/^https?:\/\/[^\/]+\/mp3\/.+-([a-z0-9]+)\.html/', $this->crawlingUrl->url, $matches) === 1) {
+        if (preg_match('/^https?:\/\/[^\/]+\/mp3\/.+-([a-z0-9]+)\.html/i', $this->crawlingUrl->url, $matches) === 1) {
             $this->dataIndex = $matches[1];
             return true;
         }
@@ -95,7 +109,10 @@ class CrawlBot extends BaseCrawlBot
 
     protected function crawlSong()
     {
-        $this->crawlingSong = $this->withDataRepository(CsnaSongRepository::class)
+        $this->crawlingSong = $this->withDatumRepository(
+            CsnaSongRepository::class,
+            CsnaCrawledSongRepository::class
+        )
             ->storeData($this->dataIndex, [
                 'artist' => preg_match('/(?<=<li><span>Ca sĩ: <\/span>).+?(?=<\/li>)/', $this->crawlingContent, $matches) === 1 ?
                     strip_tags($matches[0]) : null,
@@ -112,34 +129,39 @@ class CrawlBot extends BaseCrawlBot
 
     protected function crawlFiles()
     {
-        if (whenPregMatchAll('/https?:\/\/[^"\']*\.(flac|mp3|m4a)/', $this->crawlingContent, $matches)) {
-            $this->withDataRepository(CsnaFileRepository::class);
+        if (whenPregMatchAll('/https?:\/\/[^"\'\)\]]*\.(flac|mp3|m4a)/i', $this->crawlingContent, $matches)) {
+            $this->withDatumRepository(
+                CsnaFileRepository::class,
+                CsnaCrawledFileRepository::class
+            );
             $urls = (function ($urls, $extensions) {
                 $uniqueUrls = [];
                 foreach ($urls as $index => $url) {
-                    if (!array_key_exists($url, $uniqueUrls)) {
-                        $uniqueUrls[$url] = $extensions[$index];
+                    $lowerUrl = mb_strtolower($url);
+                    if (!array_key_exists($lowerUrl, $uniqueUrls)) {
+                        $uniqueUrls[$lowerUrl] = [
+                            'original' => $url,
+                            'extension' => mb_strtolower($extensions[$index]),
+                        ];
                     }
                 }
                 return $uniqueUrls;
             })($matches[0], $matches[1]);
-            foreach ($urls as $url => $extension) {
-                if ($filer = $this->urlDownload($url)) {
-                    $fileIndex = $extension . '.' . $this->dataIndex . '.' . md5($url);
-                    if (!$this->crawlDataRepository->hasIndex($fileIndex)) {
-                        $this->crawlingFiles->push(
-                            $this->storeData(
-                                $fileIndex,
-                                [
-                                    'file_url' => $url,
-                                ],
-                                [
-                                    'file_id' => (new HandledFileRepository())->createWithFiler($filer)->id,
-                                    'song_id' => $this->crawlingSong->id,
-                                ]
-                            )
-                        );
-                    }
+            foreach ($urls as $lowerUrl => $url) {
+                if ($filer = $this->urlDownload($url['original'])) {
+                    $fileIndex = $url['extension'] . '.' . $this->dataIndex . '.' . md5($lowerUrl);
+                    $this->crawlingFiles->push(
+                        $this->storeData(
+                            $fileIndex,
+                            [
+                                'file_url' => $url['original'],
+                            ],
+                            [
+                                'file_id' => (new HandledFileRepository())->createWithFiler($filer)->id,
+                                'song_id' => $this->crawlingSong->id,
+                            ]
+                        )
+                    );
                 }
             }
         }

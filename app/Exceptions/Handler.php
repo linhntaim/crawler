@@ -102,22 +102,20 @@ class Handler extends ExceptionHandler
     protected function unauthenticated($request, AuthenticationException $exception)
     {
         return $request->expectsJson()
-            ? response()->json(
+            ? responseJson(
                 ApiController::failPayload(null, $exception, 401),
                 ConfigHelper::getApiResponseStatus(401),
-                ConfigHelper::getApiResponseHeaders(),
-                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+                ConfigHelper::getApiResponseHeaders()
             )
             : redirect()->guest($exception->redirectTo() ?? route('login'));
     }
 
     protected function invalidJson($request, ValidationException $exception)
     {
-        return response()->json(
+        return responseJson(
             ApiController::failPayload(null, $exception, $exception->status),
             ConfigHelper::getApiResponseStatus($exception->status),
-            ConfigHelper::getApiResponseHeaders(),
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+            ConfigHelper::getApiResponseHeaders()
         );
     }
 

@@ -5,12 +5,12 @@ namespace App\Crawlers\ModelRepositories;
 use App\Crawlers\Models\Crawler;
 use App\Crawlers\Models\CrawlUrl;
 use App\ModelRepositories\Base\ModelRepository;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Class CrawlUrlRepository
  * @package App\Crawlers\ModelRepositories
- * @method CrawlUrl firstOrCreateWithAttributes(array $attributes = [], array $values = [])
  */
 abstract class CrawlUrlRepository extends ModelRepository
 {
@@ -21,8 +21,10 @@ abstract class CrawlUrlRepository extends ModelRepository
 
     protected function searchOn($query, array $search)
     {
-        if (!empty($search['crawl_url_id'])) {
-            $query->where('crawl_url_id', $search['crawl_url_id']);
+        if (isset($search['from_crawl_url_id'])) {
+            $query->whereHas('fromCrawledUrls', function (Builder $query) use ($search) {
+                $query->where('from_crawl_url_id', $search['from_crawl_url_id']);
+            });
         }
         return parent::searchOn($query, $search);
     }
@@ -41,15 +43,45 @@ abstract class CrawlUrlRepository extends ModelRepository
      * @return CrawlUrl[]|Collection
      * @throws
      */
-    public function getFreshByCrawlerAlongIdWithDividedOrder($crawler, int $divided, int $order)
+    public function getNotCompletedByCrawlerAlongIdWithDividedOrder($crawler, int $divided, int $order)
     {
         return $this->catch(function () use ($crawler, $divided, $order) {
             return $this->query()
                 ->where('crawler_id', $this->retrieveId($crawler))
-                ->where('status', CrawlUrl::STATUS_FRESH)
+                ->where('status', '<>', CrawlUrl::STATUS_COMPLETED)
                 ->whereRaw('(id - ?) % ? = 0', [$order, $divided])
+                ->orderBy('status')
                 ->get();
         });
+    }
+
+    protected function generateIndexFromUrl(string $url)
+    {
+        $parsed = parse_url($url);
+        return sprintf(
+            '%s.%s',
+            md5($parsed['host']),
+            md5(sprintf('%s?%s#%s', $parsed['path'] ?? '', $parsed['query'] ?? '', $parsed['hash'] ?? ''))
+        );
+    }
+
+    /**
+     * @param Crawler|int $crawler
+     * @param string $url
+     * @return CrawlUrl
+     */
+    public function createWithCrawler($crawler, string $url)
+    {
+        return $this->firstOrCreateWithAttributes(
+            [
+                'index' => $this->generateIndexFromUrl($url),
+            ],
+            [
+                'crawler_id' => $this->retrieveId($crawler),
+                'status' => CrawlUrl::STATUS_FRESH,
+                'url' => $url,
+            ]
+        );
     }
 
     public function updateStatus($status)
