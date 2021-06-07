@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Base - Any modification needs to be approved, except the space inside the block of TODO
+ */
+
 function maxExecutionTime()
 {
     static $maxExecutionTime = null;
@@ -67,7 +71,7 @@ function classExtended($object, $classes)
  */
 function responseJson(array $data = [], int $status = 200, array $headers = [])
 {
-    return response()->json($data, $status, $headers, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    return response()->json($data, $status, $headers, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 }
 
 /**
@@ -87,7 +91,7 @@ function storeJson($value, int $depth = 512)
  * @param int $flags
  * @return array
  */
-function jsonDecodeArray($json = null, bool $safe = true, int $depth = 512, int $flags = 0)
+function jsonDecodeArray(string $json = null, bool $safe = true, int $depth = 512, int $flags = 0)
 {
     $array = json_decode($json, true, $depth, $flags);
 
@@ -161,3 +165,7 @@ function currentUserId($default = null)
 {
     return got(auth()->id(), $default);
 }
+
+// TODO:
+
+// TODO
