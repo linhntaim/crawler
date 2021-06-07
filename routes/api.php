@@ -78,6 +78,14 @@ Route::group([
 
     Route::get('handled-file/{id}', [HandledFileController::class, 'show'])->name('handled_file.show');
 
+    Route::group([
+        'prefix' => 'crawler',
+    ], function () {
+        // TODO:
+
+        // TODO
+    });
+
     // TODO:
 
     // TODO
