@@ -85,10 +85,10 @@ Route::group([
 
     Route::get('handled-file/{id}', [HandledFileController::class, 'show'])->name('handled_file.show');
 
-    // TODO:
     Route::group([
         'prefix' => 'crawler',
     ], function () {
+        // TODO:
         Route::group([
             'prefix' => 'csna',
         ], function () {
@@ -110,7 +110,11 @@ Route::group([
                 Route::get('/', [CsnaCrawlFileController::class, 'index']);
             });
         });
+
+        // TODO
     });
+
+    // TODO:
 
     // TODO
 
